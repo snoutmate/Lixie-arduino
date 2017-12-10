@@ -15,6 +15,7 @@ Released under the GPLv3 license.
 	#define FASTLED_INTERRUPT_RETRY_COUNT 0
 #endif
 
+#define FASTLED_INTERNAL
 #include "FastLED.h"
 
 #ifndef LED_TYPE
@@ -27,27 +28,29 @@ Released under the GPLv3 license.
 
 class Lixie{
 	public:
-		Lixie(const uint8_t pin, uint8_t nDigits);
+		template<const uint8_t pin, uint8_t nDigits>
+		void initialize();
+
 		void begin();
-   
+
 		void clear(bool show_change = true);
 		void clear_digit(byte index, bool show_change = true);
 		void show();
-		
+
 		void write(uint32_t input);
 		void write(char* input);
-		
+
 		void write_flip(uint32_t input, uint16_t flip_time = 100, uint8_t flip_speed = 10);
 		void write_fade(uint32_t input, uint16_t fade_time = 250);
-		
+
 		void sweep(CRGB col, byte speed = 15);
 		void progress(float percent, CRGB col1, CRGB col2);
 		void fill_fade_in(CRGB col, byte fade_speed = 20);
 		void fill_fade_out(CRGB col, byte fade_speed = 20);
-    
+
 		void write_digit(byte input, byte index, bool show_change = true);
 		void push_digit(byte number);
-    
+
 		void color(byte r, byte g, byte b);
 		void color(CRGB c);
 		void color(byte r, byte g, byte b, byte index);
@@ -57,25 +60,25 @@ class Lixie{
 		void color_off(CRGB c);
 		void color_off(byte r, byte g, byte b, byte index);
 		void color_off(CRGB c, byte index);
-		
+
 		void color_fade(CRGB col, uint16_t duration);
 		void color_fade(CRGB col, uint16_t duration, byte index);
-		
+
 		void color_array_fade(CRGB *cols, uint16_t duration);
 		void color_array_fade(CHSV *cols, uint16_t duration);
-		
+
 		void color_wipe(CRGB col1, CRGB col2);
 
 		void nixie_mode(bool enabled, bool has_aura = true);
 		void nixie_aura_intensity(byte val);
-		
+
 		void brightness(byte bright);
 		void white_balance(CRGB c_adj);
-		
+
 		void rainbow(uint8_t r_hue, uint8_t r_sep);
 
 		void max_power(byte volts, uint16_t milliamps);
-	
+
 		uint8_t get_numdigits() const;
 		bool maxed_out(uint32_t input) const;
 
@@ -89,8 +92,8 @@ class Lixie{
 	private:
 		static constexpr byte Addresses[10] = {3, 4, 2, 0, 8, 6, 5, 7, 9, 1};
 		const static uint8_t LEDsPerDigit = 20;
-		const uint8_t NumDigits;
-		const uint16_t NumLEDs;
+		uint8_t NumDigits;
+		uint16_t NumLEDs;
 		CRGB *leds;
 		CRGB *colors;
 		CRGB *colors_off;
@@ -108,7 +111,7 @@ class Lixie{
 		byte current_number_size = 0;
 		byte current_number_arr[20];
 		void store_current(uint32_t input);
-		
+
 		bool nixie = false;
 		bool nixie_aura = false;
 		byte nixie_aura_level = 0;
@@ -116,5 +119,19 @@ class Lixie{
 		CRGB nixie_col_ion = CRGB(255,70,15);
 		CRGB nixie_col_aura = CRGB(0,100,255);
 };
+
+template<const uint8_t pin, uint8_t nDigits>
+void Lixie::initialize()
+{
+	NumDigits = nDigits;
+	NumLEDs = nDigits * LEDsPerDigit;
+	leds = new CRGB[NumLEDs];
+	led_states = new byte[NumDigits * 3]; // 24 bits for 20 LED states
+	colors = new CRGB[NumDigits];
+	colors_off = new CRGB[NumDigits];
+	digit_brightness = new byte[NumDigits];
+
+	controller = &FastLED.addLeds<LED_TYPE, pin, COLOR_ORDER>(leds, NumLEDs);
+}
 
 #endif
